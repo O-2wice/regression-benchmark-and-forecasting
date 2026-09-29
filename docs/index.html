@@ -1,0 +1,1481 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="description" content="Polynomial regression scores a perfect R2 of 1.000 on a clean curve and minus 24 once noise is added. A scikit-learn comparison of linear, polynomial, ridge, random forest and SVR across overfitting, multicollinearity, feature selection, PCA and time series forecasting.">
+
+<title>Overfitting and negative R2: a regression benchmark in scikit-learn</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./assets/favicon.png" rel="icon" type="image/png">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-701ecf5a3c7fe509613b743fad33545f.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-dark-d402f4b7d095c35e05d0c815e375e5f9.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-701ecf5a3c7fe509613b743fad33545f.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-8f35ba6ff426eac042af586cbfd71fbb.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dark-b9610cc537e41da0e60d296b51b1373d.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="site_libs/bootstrap/bootstrap-8f35ba6ff426eac042af586cbfd71fbb.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+<meta name="google-site-verification" content="jrY_3kfE94UgAOUETVccWoXGGhYpIR16svPJzQmwXFI">
+<link rel="canonical" href="https://o-2wice.github.io/regression-benchmark-and-forecasting/">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://o-2wice.github.io/regression-benchmark-and-forecasting/">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+<meta name="keywords" content="regression, scikit-learn, overfitting, negative R2, R squared, ridge regression, polynomial regression, random forest regressor, SVR, multicollinearity, PCA, SelectKBest, time series forecasting, rolling window, machine learning tutorial">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Overfitting and negative R2: a regression benchmark in scikit-learn",
+  "name": "A perfect score is a warning",
+  "description": "Polynomial regression scores a perfect R2 of 1.000 on a clean curve and minus 24 once noise is added. A scikit-learn comparison of linear, polynomial, ridge, random forest and SVR across overfitting, multicollinearity, feature selection, PCA and time series forecasting.",
+  "image": "https://o-2wice.github.io/regression-benchmark-and-forecasting/assets/social-card.png",
+  "url": "https://o-2wice.github.io/regression-benchmark-and-forecasting/",
+  "mainEntityOfPage": "https://o-2wice.github.io/regression-benchmark-and-forecasting/",
+  "inLanguage": "en-GB",
+  "datePublished": "2026-09-29",
+  "dateModified": "2026-09-29",
+  "isAccessibleForFree": true,
+  "license": "https://opensource.org/licenses/MIT",
+  "keywords": "regression, scikit-learn, overfitting, negative R squared, ridge regression, multicollinearity, PCA, time series forecasting",
+  "about": [
+    {"@type": "Thing", "name": "Regression analysis"},
+    {"@type": "Thing", "name": "Overfitting"},
+    {"@type": "Thing", "name": "Coefficient of determination"},
+    {"@type": "Thing", "name": "Multicollinearity"},
+    {"@type": "Thing", "name": "Time series forecasting"}
+  ],
+  "proficiencyLevel": "Beginner",
+  "codeRepository": "https://github.com/O-2wice/regression-benchmark-and-forecasting"
+}
+</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<meta property="og:title" content="Overfitting and negative R2: a regression benchmark in scikit-learn">
+<meta property="og:description" content="Polynomial regression scores a perfect R2 of 1.000 on a clean curve and minus 24 once noise is added. A scikit-learn comparison of linear, polynomial, ridge, random forest and SVR across overfitting, multicollinearity, feature selection, PCA and time series forecasting.">
+<meta property="og:image" content="https://o-2wice.github.io/regression-benchmark-and-forecasting/assets/social-card.png">
+<meta property="og:site_name" content="Overfitting and negative R2: a regression benchmark in scikit-learn">
+<meta property="og:image:height" content="630">
+<meta property="og:image:width" content="1200">
+<meta property="og:locale" content="en_GB">
+<meta property="og:image:alt" content="Polynomial regression fits a curve perfectly at zero noise and reaches R squared of minus 24.4 when noise is added.">
+<meta name="twitter:title" content="Overfitting and negative R2: a regression benchmark in scikit-learn">
+<meta name="twitter:description" content="Polynomial regression scores a perfect R2 of 1.000 on a clean curve and minus 24 once noise is added. A scikit-learn comparison of linear, polynomial, ridge, random forest and SVR across overfitting, multicollinearity, feature selection, PCA and time series forecasting.">
+<meta name="twitter:image" content="https://o-2wice.github.io/regression-benchmark-and-forecasting/assets/social-card.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image-height" content="630">
+<meta name="twitter:image-width" content="1200">
+<meta name="twitter:image:alt" content="Polynomial regression fits a curve perfectly at zero noise and reaches R squared of minus 24.4 when noise is added.">
+</head>
+
+<body class="fullcontent quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const darkModeDefault = authorPrefersDark;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-layout-custom">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+<!-- main -->
+
+
+
+
+
+<div class="stage">
+
+<header class="hero">
+  <div class="hero-inner">
+    <p class="kicker">Regression, tested to destruction</p>
+    <h1>A perfect score<br>is a warning</h1>
+    <p class="standfirst">
+      One model fits this curve exactly. R&nbsp;squared of 1.000, nothing left
+      over. It is also the first model to fall apart, and it falls further than
+      anything else here: all the way to −24.4.
+    </p>
+    <p class="source-line">
+      Every number on this page comes out of one notebook.
+      <a href="https://github.com/O-2wice/regression-benchmark-and-forecasting/blob/main/notebooks/regression-benchmark-and-forecasting.ipynb">Read it on GitHub</a>
+      <span class="sep">·</span>
+      <a href="https://colab.research.google.com/github/O-2wice/regression-benchmark-and-forecasting/blob/main/notebooks/regression-benchmark-and-forecasting.ipynb">open it in Colab</a>
+    </p>
+    <div class="scroll-hint">scroll to add noise <span>↓</span></div>
+  </div>
+</header>
+
+<!-- ------------------------------------------------------------------ -->
+<!-- scroll-driven: the chart stays, the noise rises, the text explains  -->
+<!-- ------------------------------------------------------------------ -->
+<section class="scrolly" id="scrolly">
+  <div class="scrolly-sticky">
+    <div class="viz-head">
+      <span class="viz-title">f(x) = x·sin(x) + 2x</span>
+      <span class="viz-noise">noise σ = <b id="sigma-out">0</b></span>
+    </div>
+    <svg id="viz" viewbox="0 0 620 360" preserveaspectratio="xMidYMid meet"></svg>
+    <div class="scoreboard" id="scores"></div>
+  </div>
+
+  <div class="scrolly-steps">
+    <div class="step" data-level="0">
+      <h2>Start with a function you wrote</h2>
+      <p>
+        Every point here comes from <code>x·sin(x) + 2x</code>. Because the
+        formula is known, there is a correct answer at every position, and a
+        model can be marked against it rather than against opinion.
+      </p>
+      <p>
+        Four models are fitted. Each gets the same five columns as input:
+        <code>x</code>, <code>sin x</code>, <code>cos x</code>,
+        <code>x²</code>, <code>x³</code>. Nobody told them the formula, only
+        that the shape looks periodic and polynomial.
+      </p>
+      <p class="aside">
+        <b>R squared</b> is the share of the variation a model accounts for.
+        1.000 is exact. 0.000 means it does no better than always guessing the
+        average and ignoring <code>x</code> completely. Below zero means it
+        does worse than that.
+      </p>
+    </div>
+
+    <div class="step" data-level="1">
+      <h2>At zero noise, two models are perfect</h2>
+      <p>
+        Polynomial regression and ridge both hit <b>1.000</b>. Given
+        <code>sin x</code> as a column, <code>x·sin(x) + 2x</code> is just a
+        weighted sum of the inputs, so the model does not need to approximate
+        anything. It solves for four numbers and lands on the curve.
+      </p>
+      <p>
+        Plain linear regression manages <b>0.888</b> without ever bending. It
+        is fitting the upward drift and ignoring every wave, and on this
+        function the drift alone is most of the story.
+      </p>
+    </div>
+
+    <div class="step" data-level="2">
+      <h2>Now add a little noise</h2>
+      <p>
+        Each target gets a random nudge drawn from a normal distribution. At
+        σ&nbsp;=&nbsp;5 the curve is still obvious to the eye, and the
+        polynomial has already dropped from 1.000 to <b>0.481</b>.
+      </p>
+      <p>
+        Nothing about the underlying function changed. What changed is that the
+        points no longer sit exactly on it, and a model with enough freedom to
+        pass through every point will use that freedom.
+      </p>
+    </div>
+
+    <div class="step" data-level="4">
+      <h2>The perfect model goes negative</h2>
+      <p>
+        By σ&nbsp;=&nbsp;20 the polynomial is at <b>−8.4</b>. It is
+        not merely inaccurate. It is worse than refusing to model the data at
+        all and drawing a flat line through the average.
+      </p>
+      <p>
+        This is <b>overfitting</b>, and the chart shows the mechanism rather
+        than the definition: the curve is chasing individual points. Those
+        points contain noise, so the shape it learns is partly the shape of the
+        randomness, which will be different next time.
+      </p>
+    </div>
+
+    <div class="step" data-level="6">
+      <h2>The unimpressive models survive</h2>
+      <p>
+        At σ&nbsp;=&nbsp;75 everything has degraded, because at this
+        point the noise is larger than much of the signal. But look at the
+        spread: linear sits near <b>−0.78</b> and the polynomial is at
+        <b>−24.4</b>, roughly thirty times worse.
+      </p>
+      <p>
+        Ridge is the same polynomial with one change: large coefficients are
+        penalised. That single constraint is the difference between a model
+        that bends toward every point and one that cannot afford to.
+      </p>
+      <p class="aside">
+        <b>Regularisation</b> adds the size of the coefficients to the thing
+        being minimised. The model must now trade accuracy against complexity,
+        so it only buys a bend when the data really pays for it.
+      </p>
+    </div>
+
+    <div class="step" data-level="7">
+      <h2>What the slider is really showing</h2>
+      <p>
+        The ranking at zero noise is the opposite of the ranking under noise.
+        If you picked a model by its score on clean data, you picked the one
+        that fails hardest the moment reality intrudes.
+      </p>
+      <p>
+        That is the whole argument, and it is why the rest of this project
+        keeps taking guarantees away: correlated inputs next, then useless
+        inputs, then real weather where there is no formula to recover at all.
+      </p>
+    </div>
+  </div>
+</section>
+</div>
+<div class="body">
+<section id="first-what-a-regression-model-actually-does" class="level2">
+<h2 data-anchor-id="first-what-a-regression-model-actually-does">First, what a regression model actually does</h2>
+<p>Skip this if it is familiar. If it is not, everything below depends on it.</p>
+<p>You have pairs of numbers. An input, call it <span class="math inline">\(x\)</span>, and an output, <span class="math inline">\(y\)</span>. A <strong>regression model</strong> is a rule for guessing <span class="math inline">\(y\)</span> when you are handed a new <span class="math inline">\(x\)</span> you have not seen before. Fitting the model means searching for the rule that comes closest to the pairs you already have.</p>
+<p>The simplest rule is a straight line: pick a slope and a height, and the model is fixed. <strong>Linear regression</strong> does exactly that, choosing the line whose total squared distance from the points is smallest. It is the whole method.</p>
+<p>Other models allow other shapes:</p>
+<ul>
+<li><strong>Polynomial regression</strong> is still a straight-line fit, but on invented columns. Give it <span class="math inline">\(x\)</span>, <span class="math inline">\(x^2\)</span> and <span class="math inline">\(x^3\)</span> as separate inputs and the resulting “line” bends, because it is a line in a space you built.</li>
+<li><strong>Random forest</strong> does not draw any curve. It repeatedly splits the input range into regions and predicts the average of each region, so its output looks like a staircase rather than a curve.</li>
+<li><strong>SVR</strong> fits a smooth surface but only penalises predictions that miss by more than a set tolerance, so small errors cost it nothing.</li>
+</ul>
+<div class="term">
+<p><strong>Two numbers are used to mark them.</strong> <strong>MSE</strong> is the average squared error: lower is better, and squaring means one large miss hurts more than several small ones. <strong>R squared</strong> rescales that into a share: 1.000 means the model accounts for all the variation, 0.000 means it does no better than ignoring <span class="math inline">\(x\)</span> entirely and always answering with the average, and a negative value means it does worse than that. Negative is not a rounding problem. It is a model you would be better off deleting.</p>
+</div>
+</section>
+<section id="three-shapes-and-the-one-that-humiliates-a-straight-line" class="level2">
+<h2 data-anchor-id="three-shapes-and-the-one-that-humiliates-a-straight-line">Three shapes, and the one that humiliates a straight line</h2>
+<p>The study names three functions. They look similar on paper and behave nothing alike.</p>
+<p><span class="math display">\[f_1(x) = x \sin(x) + 2x \qquad f_2(x) = 10 \sin(x) + x^2 \qquad f_3(x) = \operatorname{sign}(x)(x^2 + 300) + 20 \sin(x)\]</span></p>
+<div id="fig-three" class="quarto-float quarto-figure quarto-figure-center">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-three-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="assets/figures/three-functions.png" class="img-fluid figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-three-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1: The three shapes. <span class="math inline">\(f_1\)</span> climbs while it waves, <span class="math inline">\(f_2\)</span> is symmetric about zero, and <span class="math inline">\(f_3\)</span> jumps at the origin.
+</figcaption>
+</figure>
+</div>
+<p>Fitted on raw <span class="math inline">\(x\)</span> alone, with no engineered columns, they separate the models sharply:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 15%">
+<col style="width: 21%">
+<col style="width: 21%">
+<col style="width: 21%">
+<col style="width: 21%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Function</th>
+<th style="text-align: right;">Linear</th>
+<th style="text-align: right;">Poly (3)</th>
+<th style="text-align: right;">Forest</th>
+<th style="text-align: right;">SVR</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><span class="math inline">\(f_1\)</span>, a rising wave</td>
+<td style="text-align: right;">0.892</td>
+<td style="text-align: right;">0.891</td>
+<td style="text-align: right;"><strong>0.987</strong></td>
+<td style="text-align: right;">0.885</td>
+</tr>
+<tr class="even">
+<td><span class="math inline">\(f_2\)</span>, a rippled parabola</td>
+<td style="text-align: right;"><span class="down"><strong>−0.019</strong></span></td>
+<td style="text-align: right;">0.996</td>
+<td style="text-align: right;">0.996</td>
+<td style="text-align: right;">0.995</td>
+</tr>
+<tr class="odd">
+<td><span class="math inline">\(f_3\)</span>, a parabola with a jump</td>
+<td style="text-align: right;">0.932</td>
+<td style="text-align: right;">0.945</td>
+<td style="text-align: right;"><strong>1.000</strong></td>
+<td style="text-align: right;">0.973</td>
+</tr>
+</tbody>
+</table>
+<p>Look at linear regression. On <span class="math inline">\(f_1\)</span> it manages a respectable 0.892. On <span class="math inline">\(f_2\)</span> it scores <strong>below zero</strong>, which is the worst result any model records on clean data anywhere in this project.</p>
+<p>The reason is worth sitting with, because the usual explanation is wrong. It is not that <span class="math inline">\(f_2\)</span> is “too non-linear”. <span class="math inline">\(f_1\)</span> is non-linear too and the line did fine there. The difference is <strong>symmetry</strong>. <span class="math inline">\(f_1\)</span> contains <span class="math inline">\(2x\)</span>, a steady climb that a line can follow. <span class="math inline">\(f_2\)</span> is a parabola centred on zero: it falls, then rises by the same amount. The best straight line through it is flat, and a flat line is precisely the “always guess the average” baseline that R squared scores as zero.</p>
+<div class="term">
+<p><strong>The transferable lesson.</strong> Linear regression does not fail when a relationship is curved. It fails when the relationship has no consistent direction. Check whether <span class="math inline">\(y\)</span> trends with <span class="math inline">\(x\)</span> overall before assuming a line is a reasonable starting point.</p>
+</div>
+<p>And <span class="math inline">\(f_3\)</span> shows the reverse. It contains a jump at the origin, a vertical cliff that no smooth curve can reproduce, yet random forest scores a perfect <strong>1.000</strong> on it. A staircase model finds a step trivial, because stepping is all it does. The shape that is hardest for every equation-shaped model is the easiest one here.</p>
+</section>
+<section id="why-build-data-you-already-understand" class="level2">
+<h2 data-anchor-id="why-build-data-you-already-understand">Why build data you already understand</h2>
+<p>A real dataset cannot tell you whether a model is right. It can only tell you whether the model agrees with the labels you happen to have, and if those labels are wrong or incomplete, agreement is worthless.</p>
+<p>Synthetic data removes that problem by construction. Each function above is sampled at 100 points across <span class="math inline">\([-20, 20]\)</span> and split 70/30 at a fixed seed. The point is not that these curves are interesting. The point is that when a model gets one wrong, you can prove it.</p>
+<p>The rest of this page follows <span class="math inline">\(f_1\)</span>, because it is the shape the noise and feature-engineering experiments were run against.</p>
+</section>
+<section id="handing-the-model-what-you-already-know" class="level2">
+<h2 data-anchor-id="handing-the-model-what-you-already-know">Handing the model what you already know</h2>
+<p>The models never see the formula. They see engineered columns: <span class="math inline">\(x\)</span>, <span class="math inline">\(\sin x\)</span>, <span class="math inline">\(\cos x\)</span>, <span class="math inline">\(x^2\)</span>, <span class="math inline">\(x^3\)</span>. That choice came from looking at a plot and noticing the curve was both wavy and rising.</p>
+<p>It changes everything, and the table shows how unevenly:</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Model</th>
+<th style="text-align: right;">before</th>
+<th style="text-align: right;">after</th>
+<th style="text-align: right;">change</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Polynomial (deg 3)</td>
+<td style="text-align: right;">0.891</td>
+<td style="text-align: right;"><strong>1.000</strong></td>
+<td style="text-align: right;"><span class="up">+0.109</span></td>
+</tr>
+<tr class="even">
+<td>SVR (RBF)</td>
+<td style="text-align: right;">0.885</td>
+<td style="text-align: right;">1.000</td>
+<td style="text-align: right;"><span class="up">+0.115</span></td>
+</tr>
+<tr class="odd">
+<td>Random Forest</td>
+<td style="text-align: right;">0.987</td>
+<td style="text-align: right;">0.986</td>
+<td style="text-align: right;"><span class="down">−0.001</span></td>
+</tr>
+<tr class="even">
+<td>Linear Regression</td>
+<td style="text-align: right;">0.892</td>
+<td style="text-align: right;">0.888</td>
+<td style="text-align: right;"><span class="down">−0.004</span></td>
+</tr>
+</tbody>
+</table>
+<p>The five columns are built by one function, and it never sees <span class="math inline">\(f_1\)</span>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> create_features(x):</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> np.column_stack([</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>        x,</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>        np.sin(x),</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>        np.cos(x),</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>        x<span class="op">**</span><span class="dv">2</span>,</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>        x<span class="op">**</span><span class="dv">3</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    ])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>That restraint is the point. <code>np.sin(x)</code> is a guess drawn from looking at a plot, not a copy of the answer. A function that returned <code>x * np.sin(x) + 2 * x</code> would score 1.000 too and would have proved nothing.</p>
+<p>Feature engineering did not make anything smarter. It rewrote the question. “Approximate this curve” became “find four coefficients”, and the second question has an exact answer. Random forest gained nothing because it was never asking the first question: it slices the input into regions and averages inside them, so a wavy curve costs it no more than a straight one.</p>
+<div id="fig-importance" class="quarto-float quarto-figure quarto-figure-center">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-importance-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="assets/figures/importance.png" class="img-fluid figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-importance-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;2: Random forest’s feature importances. It leans on <code>x</code> and <code>x³</code> and nearly ignores <code>cos x</code>, which carries nothing this function needs.
+</figcaption>
+</figure>
+</div>
+<div class="term">
+<p><strong>Why the inputs are scaled first.</strong> The engineered columns are wildly different sizes: at <span class="math inline">\(x = 20\)</span> the <span class="math inline">\(x^3\)</span> column is 8,000 while <span class="math inline">\(\sin x\)</span> never leaves <span class="math inline">\([-1, 1]\)</span>. Ridge penalises large coefficients, and SVR measures distance between points, so both would be dominated by whichever column happens to carry the biggest numbers. <code>StandardScaler</code> puts every column on the same footing first. Random forest needs none of this, because a threshold split does not care what units it is splitting.</p>
+</div>
+</section>
+<section id="correlated-inputs-break-the-linear-models" class="level2">
+<h2 data-anchor-id="correlated-inputs-break-the-linear-models">Correlated inputs break the linear models</h2>
+<p>The second dataset is multivariate: 2,000 samples from <code>make_regression</code>, then deliberately spoiled by making features carry overlapping information.</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Model</th>
+<th style="text-align: right;">R² base</th>
+<th style="text-align: right;">correlated</th>
+<th style="text-align: right;">MSE base</th>
+<th style="text-align: right;">MSE correlated</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Linear Regression</td>
+<td style="text-align: right;">0.985</td>
+<td style="text-align: right;"><span class="down">−0.013</span></td>
+<td style="text-align: right;">415.03</td>
+<td style="text-align: right;">97.52</td>
+</tr>
+<tr class="even">
+<td>Polynomial (deg 2)</td>
+<td style="text-align: right;">0.984</td>
+<td style="text-align: right;"><span class="down">−0.049</span></td>
+<td style="text-align: right;">442.00</td>
+<td style="text-align: right;">101.02</td>
+</tr>
+<tr class="odd">
+<td>Random Forest</td>
+<td style="text-align: right;">0.916</td>
+<td style="text-align: right;"><span class="down">−0.046</span></td>
+<td style="text-align: right;">2325.69</td>
+<td style="text-align: right;">100.65</td>
+</tr>
+<tr class="even">
+<td>SVR (RBF)</td>
+<td style="text-align: right;">0.954</td>
+<td style="text-align: right;"><span class="down">−1.339</span></td>
+<td style="text-align: right;">1280.71</td>
+<td style="text-align: right;">225.11</td>
+</tr>
+</tbody>
+</table>
+<p>The correlation is not simulated by hand. <code>make_low_rank_matrix</code> produces ten columns that genuinely contain fewer than ten independent directions:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>X_corr <span class="op">=</span> make_low_rank_matrix(</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    n_samples<span class="op">=</span><span class="dv">2000</span>, n_features<span class="op">=</span><span class="dv">10</span>,</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    effective_rank<span class="op">=</span><span class="dv">5</span>, tail_strength<span class="op">=</span><span class="fl">0.5</span>, random_state<span class="op">=</span>SEED</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>weights <span class="op">=</span> np.random.RandomState(SEED).randn(<span class="dv">5</span>)</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>noise   <span class="op">=</span> np.random.RandomState(SEED).normal(<span class="dv">0</span>, <span class="dv">10</span>, size<span class="op">=</span><span class="dv">2000</span>)</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>y_corr  <span class="op">=</span> X_corr[:, :<span class="dv">5</span>] <span class="op">@</span> weights <span class="op">+</span> noise</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Only the first five columns drive the target. The other five are along for the ride, and they overlap with the first five because the matrix has rank 5.</p>
+<p>There is a trap in this table. The mean squared error <strong>improved</strong> for every model while R² collapsed. Both are correct. The correlated target has far less variance, so smaller errors are easier to achieve and explaining the remaining variation is harder. A single metric would have told you the opposite story.</p>
+<div class="term">
+<p><strong>Multicollinearity.</strong> Ordinary least squares solves for one coefficient per input, assuming each contributes something distinct. When two columns say nearly the same thing, there is no unique way to divide the credit between them. The fit stays good; the coefficients become unstable and stop meaning anything, and small changes in the data swing them wildly.</p>
+</div>
+</section>
+<section id="what-a-model-does-with-features-that-mean-nothing" class="level2">
+<h2 data-anchor-id="what-a-model-does-with-features-that-mean-nothing">What a model does with features that mean nothing</h2>
+<p>The brief asks for something sharper than a score here: build a dataset where some inputs are known to be pure noise, fit a linear regressor, and read the coefficients it learned for them.</p>
+<p>The useless columns are drawn from a normal distribution and glued on beside the real ones, so nothing distinguishes them except that they carry no signal:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> create_harder_features(x, n_non_informative<span class="op">=</span><span class="dv">5</span>):</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    base_features <span class="op">=</span> np.column_stack([</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>        x, x <span class="op">*</span> np.sin(x), np.sin(x), np.cos(x), x<span class="op">**</span><span class="dv">2</span>, x<span class="op">**</span><span class="dv">3</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    ])</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    non_informative <span class="op">=</span> np.random.randn(<span class="bu">len</span>(x), n_non_informative)</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> np.hstack([base_features, non_informative])</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>X_enhanced <span class="op">=</span> create_harder_features(X_base, n_non_informative<span class="op">=</span><span class="dv">10</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>With strong target noise and ten uninformative columns added, linear regression manages <strong>R² 0.082</strong> with an MSE of 1845.6. Barely above useless. The coefficients explain why:</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Feature</th>
+<th style="text-align: right;">Coefficient</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1</td>
+<td style="text-align: right;">55.979</td>
+</tr>
+<tr class="even">
+<td>2</td>
+<td style="text-align: right;">9.210</td>
+</tr>
+<tr class="odd">
+<td>3</td>
+<td style="text-align: right;">8.187</td>
+</tr>
+<tr class="even">
+<td>4</td>
+<td style="text-align: right;">1.565</td>
+</tr>
+<tr class="odd">
+<td>5</td>
+<td style="text-align: right;">1.643</td>
+</tr>
+<tr class="even">
+<td>6</td>
+<td style="text-align: right;"><span class="down">−32.460</span></td>
+</tr>
+<tr class="odd">
+<td>7</td>
+<td style="text-align: right;">1.599</td>
+</tr>
+</tbody>
+</table>
+<p>The expectation is that informative features get large weights and noise features get roughly zero. That is not what happened. Feature 6 carries no signal and was handed a coefficient of −32.5, comparable in size to the genuine one at the top.</p>
+<p>This is worth internalising, because it is how feature importance is commonly misread. A large coefficient does not mean a feature matters. Least squares distributes weight to minimise error on the training set, and if a random column happens to correlate with the noise in that particular sample, it will be paid for it. Run it again with a different seed and the same column gets a different number.</p>
+</section>
+<section id="two-ways-to-cut-features-down-both-refusing-to-help" class="level2">
+<h2 data-anchor-id="two-ways-to-cut-features-down-both-refusing-to-help">Two ways to cut features down, both refusing to help</h2>
+<p>Once the multivariate data is deliberately correlated, an obvious response is to reduce the inputs. The notebook tries the two standard approaches and scores them against the untouched baseline.</p>
+<p><code>SelectKBest</code> with <code>f_regression</code> <strong>picks</strong> columns: it scores each feature against the target and keeps the best. PCA <strong>builds new</strong> ones: it rotates the data onto axes of maximum variance, which are combinations of the originals and are uncorrelated by construction.</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Model</th>
+<th style="text-align: right;">base R²</th>
+<th style="text-align: right;">after selection</th>
+<th style="text-align: right;">after PCA</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Linear Regression</td>
+<td style="text-align: right;">−0.013</td>
+<td style="text-align: right;">−0.013</td>
+<td style="text-align: right;">−0.013</td>
+</tr>
+<tr class="even">
+<td>Polynomial (deg 2)</td>
+<td style="text-align: right;">−0.049</td>
+<td style="text-align: right;">−0.013</td>
+<td style="text-align: right;"><span class="up">−0.008</span></td>
+</tr>
+<tr class="odd">
+<td>Random Forest</td>
+<td style="text-align: right;">−0.046</td>
+<td style="text-align: right;">−0.085</td>
+<td style="text-align: right;">−0.054</td>
+</tr>
+<tr class="even">
+<td>SVR (RBF)</td>
+<td style="text-align: right;">−1.339</td>
+<td style="text-align: right;"><span class="up">−0.696</span></td>
+<td style="text-align: right;">−0.887</td>
+</tr>
+</tbody>
+</table>
+<p>Both reduce ten columns to five, and both are handed to the same <code>evaluate_models</code> helper so nothing else differs between the runs:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>selector <span class="op">=</span> SelectKBest(score_func<span class="op">=</span>f_regression, k<span class="op">=</span><span class="dv">5</span>)</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>X_train_selected <span class="op">=</span> selector.fit_transform(X_train_corr, y_train_corr)</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>X_test_selected  <span class="op">=</span> selector.transform(X_test_corr)</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>pca <span class="op">=</span> PCA(n_components<span class="op">=</span><span class="dv">5</span>)</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>X_train_pca <span class="op">=</span> pca.fit_transform(X_train_scaled)</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>X_test_pca  <span class="op">=</span> pca.transform(X_test_scaled)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Note that PCA is given scaled inputs and <code>SelectKBest</code> is not. PCA looks for directions of maximum variance, so a column measured in thousands would dominate the first component for no reason other than its units.</p>
+<p>Neither rescues anything. The best result is polynomial regression moving from −0.049 to −0.008, which is still a model worse than the mean.</p>
+<p>That is the useful lesson. Both techniques address <em>redundancy</em> among features, and redundancy was not the binding problem. The target simply did not have much explainable variance left once the correlation was introduced, and no amount of rearranging the inputs creates signal that is not there. Dimensionality reduction is a remedy for a specific illness, not a tonic.</p>
+<div class="term">
+<p><strong>How the correlated data was made.</strong> <code>make_low_rank_matrix</code> generates a matrix whose columns are combinations of a smaller number of underlying directions. Ten columns that genuinely contain, say, three independent dimensions. That is what makes the multicollinearity real rather than simulated by hand.</p>
+</div>
+</section>
+<section id="a-pipeline-built-for-noise-rather-than-against-it" class="level2">
+<h2 data-anchor-id="a-pipeline-built-for-noise-rather-than-against-it">A pipeline built for noise, rather than against it</h2>
+<p>After watching the polynomial disintegrate, the notebook assembles a second pipeline designed with noise assumed rather than treated as an accident: smoothing on the targets, scaling, and models that regularise by default.</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Model</th>
+<th style="text-align: right;">R² clean</th>
+<th style="text-align: right;">R² noisy</th>
+<th style="text-align: right;">change</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Bayesian Ridge</td>
+<td style="text-align: right;">0.839</td>
+<td style="text-align: right;"><strong>0.467</strong></td>
+<td style="text-align: right;"><span class="down">−0.372</span></td>
+</tr>
+<tr class="even">
+<td>Ridge CV</td>
+<td style="text-align: right;">0.838</td>
+<td style="text-align: right;">0.496</td>
+<td style="text-align: right;"><span class="down">−0.342</span></td>
+</tr>
+</tbody>
+</table>
+<p>Compare that against the first attempt, where polynomial regression fell from 1.000 to −0.917. These models start lower and end far higher. Giving up the perfect fit bought resilience worth more than the fit was.</p>
+<div class="term">
+<p><strong>Savitzky-Golay smoothing.</strong> Rather than averaging neighbouring points, which flattens peaks, it fits a low-order polynomial across a sliding window and takes its value at the centre. Noise falls away while the shape of genuine features survives, which matters when the peaks are the signal.</p>
+<p><strong>Bayesian Ridge and RidgeCV.</strong> Both remove a manual choice. RidgeCV tries a range of penalty strengths and cross-validates to pick one. Bayesian Ridge treats the penalty as a parameter to be estimated from the data alongside the coefficients, so nobody has to guess it.</p>
+</div>
+</section>
+<section id="real-data-where-nothing-can-be-checked" class="level2">
+<h2 data-anchor-id="real-data-where-nothing-can-be-checked">Real data, where nothing can be checked</h2>
+<p>The last stage removes the last guarantee. The data is daily weather from sensor 22508 near Honolulu, recorded between 1940 and 1945. No formula produced it. There is no truth to recover, only yesterday and tomorrow.</p>
+<p>A rolling window converts the series into a supervised problem: the previous <span class="math inline">\(W\)</span> days become the inputs and the next day becomes the target, with the window sliding one day at a time.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> create_rolling_windows(data, window_size<span class="op">=</span><span class="dv">7</span>):</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    X, y <span class="op">=</span> [], []</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="bu">len</span>(data) <span class="op">-</span> window_size):</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>        X.append(data[i:i<span class="op">+</span>window_size])</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>        y.append(data[i<span class="op">+</span>window_size])</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> np.array(X), np.array(y)</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>X_rolling, y_rolling <span class="op">=</span> create_rolling_windows(df_sensor[<span class="st">'MeanTemp'</span>].values, <span class="dv">7</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Seven columns in, one out. A time series has become an ordinary supervised table, and every regression model above now applies to it unchanged.</p>
+<p>Training uses 1940 to 1944, testing uses 1945, so the model always predicts forward and never peeks at a period it has seen.</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Model</th>
+<th style="text-align: right;">R²</th>
+<th style="text-align: right;">MSE</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Linear Regression</td>
+<td style="text-align: right;"><strong>0.687</strong></td>
+<td style="text-align: right;">0.736</td>
+</tr>
+<tr class="even">
+<td>Polynomial (deg 2)</td>
+<td style="text-align: right;">0.680</td>
+<td style="text-align: right;">0.754</td>
+</tr>
+<tr class="odd">
+<td>Random Forest</td>
+<td style="text-align: right;">0.649</td>
+<td style="text-align: right;">0.825</td>
+</tr>
+<tr class="even">
+<td>SVR (RBF)</td>
+<td style="text-align: right;">0.398</td>
+<td style="text-align: right;">1.416</td>
+</tr>
+</tbody>
+</table>
+<p>Linear regression wins here, having lost on the synthetic curve. Tomorrow’s temperature mostly resembles today’s, and that relationship is close to a straight line. The flexible models have no hidden structure to find, so their flexibility only gives them more ways to be wrong. SVR at 0.398 is the clearest case.</p>
+<div id="fig-forecast" class="quarto-float quarto-figure quarto-figure-center">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-forecast-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="assets/figures/forecast-140.png" class="img-fluid figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-forecast-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;3: Predicted against actual temperatures through 1945. The forecast follows the seasonal shape and flattens the daily swings, which is what 0.687 looks like.
+</figcaption>
+</figure>
+</div>
+<p>Across five <code>TimeSeriesSplit</code> folds, Bayesian Ridge averages about <strong>0.73</strong>, with folds ranging from 0.628 to 0.795. The spread is the more useful number: it says the answer depends on which stretch of the war you test on.</p>
+<div class="term">
+<p><strong>Why one day and not seven.</strong> Each prediction uses real measurements from the days before it. To forecast a week ahead you must feed predictions back in as though they were measurements, so every error compounds into the next step. The notebook sidesteps this with <code>MultiOutputRegressor</code>, predicting all seven days at once, which avoids the feedback but cannot see past the window it was handed.</p>
+</div>
+</section>
+<section id="tuning-bought-nothing-and-that-is-worth-saying" class="level2">
+<h2 data-anchor-id="tuning-bought-nothing-and-that-is-worth-saying">Tuning bought nothing, and that is worth saying</h2>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Model</th>
+<th style="text-align: right;">baseline</th>
+<th style="text-align: right;">tuned</th>
+<th style="text-align: right;">change</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Linear Regression</td>
+<td style="text-align: right;">0.752 ± 0.057</td>
+<td style="text-align: right;">0.743 ± 0.057</td>
+<td style="text-align: right;"><span class="down">−0.008</span></td>
+</tr>
+</tbody>
+</table>
+<p><code>GridSearchCV</code> made it fractionally worse. Against a fold standard deviation of 0.057, a change of 0.008 is noise. The honest reading is that the pipeline was already where it wanted to be and the search had nothing to find, which is a result rather than a failure to report.</p>
+</section>
+<section id="four-things-that-held-up-across-every-round" class="level2">
+<h2 data-anchor-id="four-things-that-held-up-across-every-round">Four things that held up across every round</h2>
+<p><strong>Flexibility is only an asset when the truth is complicated.</strong> Random forest won on a wavy curve and lost on temperatures. SVR was competitive on synthetic data and worst on real data.</p>
+<p><strong>A perfect score is a warning.</strong> The only model to reach 1.000 was the only one to reach −24.</p>
+<p><strong>One metric can invert the story.</strong> The correlated round had error falling and R² collapsing at the same time, from identical predictions.</p>
+<p><strong>Regularisation never wins and never loses badly.</strong> Ridge held no best score in any clean comparison and avoided every disaster in the spoiled ones.</p>
+</section>
+<section id="run-it-and-disagree-with-it" class="level2">
+<h2 data-anchor-id="run-it-and-disagree-with-it">Run it and disagree with it</h2>
+<p>Every table above is printed by one notebook, executed top to bottom, and the excerpts on this page are lifted from it unedited. Nothing was fitted somewhere else and pasted in.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/O-2wice/regression-benchmark-and-forecasting</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> regression-benchmark-and-forecasting</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install <span class="at">-r</span> requirements.txt</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="ex">jupyter</span> lab notebooks/regression-benchmark-and-forecasting.ipynb</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>It runs on a laptop CPU in a few minutes. There is nothing to download by hand and no key to supply: the weather archive is fetched over <code>urllib</code> and unpacked with <code>zipfile</code>, so it behaves the same on Windows, macOS, Linux and Colab.</p>
+<div class="cta">
+<p><a href="https://github.com/O-2wice/regression-benchmark-and-forecasting/blob/main/notebooks/regression-benchmark-and-forecasting.ipynb" class="cta-btn">Read the notebook on GitHub</a> <a href="https://colab.research.google.com/github/O-2wice/regression-benchmark-and-forecasting/blob/main/notebooks/regression-benchmark-and-forecasting.ipynb" class="cta-btn ghost">Open it in Colab</a></p>
+</div>
+<p>The most useful thing you can do with it is change the seed. Several results here, especially the coefficient handed to a pure-noise column, are stable in their lesson and unstable in their exact value. Watching that number move is the lesson.</p>
+</section>
+</div>
+<script>
+(function () {
+  const svg = document.getElementById("viz");
+  if (!svg) return;
+  const NS = "http://www.w3.org/2000/svg";
+  const W = 620, H = 360, PAD = { l: 46, r: 14, t: 14, b: 30 };
+  const COL = { Linear: "#8a8f9c", Polynomial: "#c2603d", Ridge: "#2f6f8f", Forest: "#4f7d5a" };
+  let data = null, current = -1;
+
+  const el = (n, a) => { const e = document.createElementNS(NS, n); for (const k in a) e.setAttribute(k, a[k]); return e; };
+
+  function scales() {
+    const xs = data.grid, allY = [];
+    data.levels.forEach(L => { L.train.forEach(p => allY.push(p[1])); });
+    data.truth.forEach(p => allY.push(p[1]));
+    const ymin = Math.min(...allY), ymax = Math.max(...allY);
+    const pad = (ymax - ymin) * 0.06;
+    const xmin = Math.min(...xs), xmax = Math.max(...xs);
+    return {
+      x: v => PAD.l + (v - xmin) / (xmax - xmin) * (W - PAD.l - PAD.r),
+      y: v => H - PAD.b - (v - (ymin - pad)) / ((ymax + pad) - (ymin - pad)) * (H - PAD.t - PAD.b),
+      ymin: ymin - pad, ymax: ymax + pad, xmin, xmax
+    };
+  }
+
+  function draw(idx) {
+    if (!data || idx === current) return;
+    current = idx;
+    const L = data.levels[idx], S = scales();
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+
+    // axes
+    [0, 0.25, 0.5, 0.75, 1].forEach(t => {
+      const yv = S.ymin + t * (S.ymax - S.ymin);
+      svg.appendChild(el("line", { x1: PAD.l, x2: W - PAD.r, y1: S.y(yv), y2: S.y(yv),
+        stroke: "rgba(140,140,150,.18)", "stroke-width": 1 }));
+      const tx = el("text", { x: PAD.l - 8, y: S.y(yv) + 4, "text-anchor": "end",
+        "font-size": 10, fill: "#8b90a0" });
+      tx.textContent = Math.round(yv);
+      svg.appendChild(tx);
+    });
+
+    // the true function
+    let d = "";
+    data.truth.forEach((p, i) => { d += (i ? "L" : "M") + S.x(p[0]).toFixed(1) + "," + S.y(p[1]).toFixed(1); });
+    svg.appendChild(el("path", { d, fill: "none", stroke: "#b9bcc4", "stroke-width": 1.6, "stroke-dasharray": "4 4" }));
+
+    // the noisy training points
+    L.train.forEach(p => svg.appendChild(el("circle", {
+      cx: S.x(p[0]), cy: S.y(p[1]), r: 2.6, fill: "#1f2430", opacity: .45 })));
+
+    // each model's fitted curve
+    Object.keys(COL).forEach(name => {
+      const c = L.models[name].curve;
+      let p = "";
+      c.forEach((v, i) => { p += (i ? "L" : "M") + S.x(data.grid[i]).toFixed(1) + "," + S.y(v).toFixed(1); });
+      svg.appendChild(el("path", { d: p, fill: "none", stroke: COL[name],
+        "stroke-width": name === "Polynomial" ? 2.6 : 1.8, opacity: name === "Polynomial" ? 1 : .8 }));
+    });
+
+    document.getElementById("sigma-out").textContent = L.sigma;
+    document.getElementById("scores").innerHTML = Object.keys(COL).map(n => {
+      const r = L.models[n].r2;
+      return '<div class="sb-item"><div class="sb-name" style="color:' + COL[n] + '">' + n + '</div>' +
+             '<div class="sb-val ' + (r >= 0.5 ? "good" : "bad") + '">' + r.toFixed(3) + "</div></div>";
+    }).join("");
+  }
+
+  fetch("assets/noise-sweep.json").then(r => r.json()).then(j => {
+    data = j;
+    draw(0);
+    const steps = Array.from(document.querySelectorAll(".step"));
+    const io = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          steps.forEach(s => s.classList.remove("active"));
+          e.target.classList.add("active");
+          draw(Math.min(+e.target.dataset.level, data.levels.length - 1));
+        }
+      });
+    }, { rootMargin: "-45% 0px -45% 0px" });
+    steps.forEach(s => io.observe(s));
+  }).catch(() => { document.getElementById("scrolly").style.display = "none"; });
+})();
+</script>
+
+
+
+
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/o-2wice\.github\.io\/regression-benchmark-and-forecasting\/");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p>Code and the executed notebook: <a href="https://github.com/O-2wice/regression-benchmark-and-forecasting">github.com/O-2wice/regression-benchmark-and-forecasting</a></p>
+</div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+<p><a href="https://github.com/O-2wice/regression-benchmark-and-forecasting/issues">Report an issue</a></p>
+</div>
+  </div>
+</footer>
+
+
+
+
+<script src="site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

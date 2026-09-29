@@ -1,0 +1,377 @@
+/*-- scss:defaults --*/
+
+// ---------------------------------------------------------------------------
+// Palette
+//
+// This project is about numbers holding or failing, so the page is built for
+// tables: a cool slate ground, teal where a model holds, terracotta where it
+// collapses. The two accents are the only colours, and they always mean the
+// same thing.
+// ---------------------------------------------------------------------------
+
+$ink:       #1f2430;
+$muted:     #5b6170;
+$faint:     #8b90a0;
+$paper:     #fbfbfa;
+$surface:   #ffffff;
+$hold:      #2f6f8f;   // teal: the model copes
+$fail:      #c2603d;   // terracotta: the model does not
+$rule:      rgba(31, 36, 48, .12);
+
+$primary:     $hold;
+$body-color:  $ink;
+$body-bg:     $paper;
+$link-color:  $hold;
+
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+$font-family-sans-serif: "IBM Plex Sans", -apple-system, "Segoe UI", Roboto, sans-serif;
+$font-family-monospace:  "IBM Plex Mono", ui-monospace, Menlo, monospace;
+$headings-font-family:   "IBM Plex Sans", $font-family-sans-serif;
+$font-size-root: 17px;
+$headings-font-weight: 600;
+
+$navbar-bg: $ink;
+$navbar-fg: $paper;
+$toc-color: $muted;
+
+/*-- scss:rules --*/
+
+main { max-width: 47rem; }
+p, li { line-height: 1.72; }
+p { margin-bottom: 1.05rem; }
+
+#title-block-header {
+  border-bottom: 1px solid $rule;
+  padding-bottom: 1.3rem;
+  margin-bottom: 2rem;
+
+  .quarto-title .title { font-size: 2.4rem; line-height: 1.14; letter-spacing: -.022em; }
+  .subtitle { font-size: 1.12rem; color: $muted; margin-top: .45rem; font-weight: 400; }
+}
+
+h2 {
+  margin-top: 3.4rem;
+  margin-bottom: 1rem;
+  font-size: 1.55rem;
+  letter-spacing: -.015em;
+  padding-bottom: .45rem;
+  border-bottom: 2px solid rgba(47, 111, 143, .22);
+}
+
+h3 {
+  margin-top: 2.2rem;
+  margin-bottom: .6rem;
+  font-size: 1.14rem;
+  font-weight: 600;
+  color: $hold;
+}
+
+.lead-in {
+  display: block;
+  font-size: 1.28rem;
+  line-height: 1.55;
+  color: #2a2f3d;
+  margin: 0 0 1.7rem;
+}
+
+// ---------------------------------------------------------------------------
+// Tables carry the argument here, so they get real design rather than defaults
+// ---------------------------------------------------------------------------
+
+table {
+  width: 100%;
+  margin: 1.6rem 0;
+  font-size: .92rem;
+  font-variant-numeric: tabular-nums;
+  border-collapse: collapse;
+}
+
+thead th {
+  border-bottom: 2px solid $hold !important;
+  font-size: .72rem;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: $muted;
+  font-weight: 600;
+  padding: .45rem .6rem;
+}
+
+tbody td { border-bottom: 1px solid $rule; padding: .48rem .6rem; }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover { background: rgba(47, 111, 143, .04); }
+
+// A number that got worse, and one that held.
+.down { color: $fail; font-weight: 600; font-variant-numeric: tabular-nums; }
+.up   { color: $hold; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+// ---------------------------------------------------------------------------
+// The collapse panel: the headline of the whole project
+// ---------------------------------------------------------------------------
+
+.collapse-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  border: 1px solid $rule;
+  border-radius: 7px;
+  overflow: hidden;
+  background: $surface;
+  margin: 2rem 0 2.4rem;
+}
+
+.cs-cell {
+  flex: 1 1 25%;
+  min-width: 120px;
+  padding: 1rem .8rem .9rem;
+  text-align: center;
+  border-right: 1px solid $rule;
+  &:last-child { border-right: none; }
+}
+
+.cs-model { font-size: .74rem; letter-spacing: .05em; text-transform: uppercase; color: $muted; }
+.cs-pair  { margin-top: .5rem; font-size: 1.3rem; font-variant-numeric: tabular-nums; }
+.cs-from  { color: $muted; }
+.cs-arrow { color: $faint; margin: 0 .35rem; font-size: .95rem; }
+.cs-to    { font-weight: 600; }
+.cs-to.bad  { color: $fail; }
+.cs-to.ok   { color: $hold; }
+.cs-note  { margin-top: .4rem; font-size: .76rem; color: $faint; }
+
+// ---------------------------------------------------------------------------
+// Asides
+// ---------------------------------------------------------------------------
+
+.term {
+  background: rgba(47, 111, 143, .045);
+  border: 1px solid rgba(47, 111, 143, .16);
+  border-left: 3px solid rgba(47, 111, 143, .6);
+  border-radius: 0 5px 5px 0;
+  padding: .9rem 1.05rem .75rem;
+  margin: 1.6rem 0;
+  font-size: .95rem;
+  color: #343a49;
+  p:last-child { margin-bottom: 0; }
+  strong:first-child { color: $hold; }
+}
+
+.verdict {
+  border-left: 3px solid $fail;
+  background: rgba(194, 96, 61, .05);
+  border-radius: 0 6px 6px 0;
+  padding: .9rem 1.1rem;
+  margin: 1.8rem 0;
+  font-size: 1.06rem;
+  line-height: 1.55;
+  p:last-child { margin-bottom: 0; }
+  strong { color: $fail; }
+}
+
+figure { margin: 2.2rem 0; }
+figcaption, .figure-caption {
+  font-size: .87rem;
+  line-height: 1.55;
+  color: $muted;
+  padding-top: .55rem;
+  margin-top: .55rem;
+  border-top: 1px solid $rule;
+}
+
+strong { color: $ink; font-weight: 600; }
+
+code:not(.sourceCode) {
+  color: $hold;
+  background: rgba(47, 111, 143, .07);
+  padding: .1em .35em;
+  border-radius: 3px;
+  font-size: .88em;
+}
+
+blockquote {
+  border-left: 3px solid rgba(47, 111, 143, .3);
+  color: $muted;
+  padding: .25rem 0 .25rem 1rem;
+  font-style: italic;
+}
+
+#TOC, .sidebar { font-size: .86rem; }
+
+// ===========================================================================
+// Custom page furniture: full-bleed hero, then a chart that stays put while
+// the argument scrolls past it. This page has no navbar and no sidebar, so
+// everything below is the layout rather than a decoration on top of one.
+// ===========================================================================
+
+body { margin: 0; }
+.stage { width: 100%; }
+
+.hero {
+  background: $ink;
+  color: #f2f2f0;
+  padding: 5.5rem 1.5rem 4.5rem;
+}
+.hero-inner { max-width: 54rem; margin: 0 auto; }
+
+.kicker {
+  font-size: .74rem; letter-spacing: .18em; text-transform: uppercase;
+  color: $hold; margin: 0 0 1.4rem;
+}
+.hero h1 {
+  font-size: clamp(2.6rem, 7vw, 4.6rem);
+  line-height: 1.02;
+  letter-spacing: -.035em;
+  margin: 0 0 1.6rem;
+  border: none;
+  color: #fff;
+}
+.standfirst {
+  font-size: clamp(1.05rem, 2.2vw, 1.3rem);
+  line-height: 1.6;
+  color: #c9cbd2;
+  max-width: 40rem;
+  margin: 0 0 1.8rem;
+}
+.byline { font-size: .84rem; color: #8b90a0; margin: 0; a { color: $hold; } }
+.scroll-hint {
+  margin-top: 3rem; font-size: .78rem; letter-spacing: .1em;
+  text-transform: uppercase; color: #6f7480;
+  span { display: inline-block; margin-left: .4rem; animation: nudge 1.8s infinite; }
+}
+@keyframes nudge { 0%,100% { transform: translateY(0); } 50% { transform: translateY(4px); } }
+
+// --- the scroll-driven section --------------------------------------------
+
+.scrolly {
+  display: grid;
+  grid-template-columns: 1.05fr .95fr;
+  gap: 2.5rem;
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  align-items: start;
+}
+
+.scrolly-sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 1rem 0;
+}
+
+.viz-head {
+  display: flex; justify-content: space-between; align-items: baseline;
+  font-size: .8rem; color: $muted; margin-bottom: .5rem;
+  .viz-title { font-family: "IBM Plex Mono", monospace; color: $ink; }
+  .viz-noise b { color: $fail; font-variant-numeric: tabular-nums; }
+}
+
+#viz { width: 100%; height: auto; background: $surface; border: 1px solid $rule; border-radius: 6px; }
+
+.scoreboard { display: grid; grid-template-columns: repeat(4, 1fr); gap: .5rem; margin-top: .7rem; }
+.sb-item {
+  border: 1px solid $rule; border-radius: 5px; padding: .5rem .4rem;
+  text-align: center; background: $surface;
+}
+.sb-name { font-size: .68rem; letter-spacing: .05em; text-transform: uppercase; color: $muted; }
+.sb-val  { font-size: 1.05rem; font-variant-numeric: tabular-nums; margin-top: .2rem; font-weight: 600; }
+.sb-val.good { color: $hold; }
+.sb-val.bad  { color: $fail; }
+
+.scrolly-steps { padding: 30vh 0 40vh; }
+.step {
+  min-height: 78vh;
+  display: flex; flex-direction: column; justify-content: center;
+  opacity: .32;
+  transition: opacity .35s ease;
+  h2 { border: none; margin: 0 0 .9rem; font-size: 1.6rem; padding: 0; }
+  p { font-size: 1.02rem; }
+  &.active { opacity: 1; }
+}
+.step .aside {
+  border-left: 3px solid rgba(47, 111, 143, .5);
+  background: rgba(47, 111, 143, .05);
+  padding: .8rem 1rem; border-radius: 0 5px 5px 0;
+  font-size: .93rem; color: #3a4050;
+}
+
+// --- the ordinary article that follows ------------------------------------
+
+.body { max-width: 44rem; margin: 0 auto; padding: 4rem 1.5rem 5rem; }
+
+@media (max-width: 900px) {
+  .scrolly { grid-template-columns: 1fr; }
+  .scrolly-sticky { position: sticky; top: 0; height: 62vh; background: $paper; z-index: 2; }
+  .scrolly-steps { padding: 2rem 0 3rem; }
+  .step { min-height: auto; padding: 2.5rem 0; opacity: 1; }
+}
+
+// ---------------------------------------------------------------------------
+// Code lifted from the notebook. It is quoted evidence rather than decoration,
+// so it gets a marked left edge and sits tighter than the prose around it.
+// ---------------------------------------------------------------------------
+
+div.sourceCode {
+  background: #f4f5f7;
+  border: 1px solid $rule;
+  border-left: 3px solid rgba(47, 111, 143, .55);
+  border-radius: 0 6px 6px 0;
+  margin: 1.5rem 0;
+  padding: .85rem 1rem;
+  overflow-x: auto;
+}
+
+pre.sourceCode, pre > code.sourceCode {
+  font-size: .855rem;
+  line-height: 1.62;
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+// The bash block is an instruction, not a quotation, so it reads differently.
+div.sourceCode:has(code.bash) {
+  background: $ink;
+  border-color: $ink;
+  border-left-color: $fail;
+  code, span { color: #d6d8dd !important; }
+  .ex, .fu { color: #8fc3e0 !important; }
+}
+
+.source-line {
+  font-size: .88rem;
+  color: #9aa0ad;
+  margin: 2.2rem 0 0;
+  a { color: #8fc3e0; text-decoration: none; border-bottom: 1px solid rgba(143, 195, 224, .4); }
+  a:hover { border-bottom-color: #8fc3e0; }
+  .sep { margin: 0 .5rem; color: #5c6270; }
+}
+
+.cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .7rem;
+  margin: 1.8rem 0 2rem;
+}
+
+.cta-btn {
+  display: inline-block;
+  padding: .6rem 1.1rem;
+  border-radius: 5px;
+  background: $hold;
+  color: #fff !important;
+  font-size: .92rem;
+  font-weight: 500;
+  text-decoration: none;
+  border: 1px solid $hold;
+  &:hover { background: darken($hold, 7%); }
+
+  &.ghost {
+    background: transparent;
+    color: $hold !important;
+    &:hover { background: rgba(47, 111, 143, .07); }
+  }
+}

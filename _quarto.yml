@@ -1,0 +1,84 @@
+project:
+  type: website
+  output-dir: docs
+  # Lists the home page in sitemap.xml as .../ rather than .../index.html
+  post-render: fix-sitemap.ts
+  resources:
+    - assets/social-card.png
+    - assets/favicon.png
+    - assets/figures/*.png
+    - assets/noise-sweep.json
+  render:
+    - index.qmd
+
+website:
+  title: "Overfitting and negative R2: a regression benchmark in scikit-learn"
+  description: >-
+    Polynomial regression scores a perfect R2 of 1.000 on a clean curve and minus 24 once noise is added. A scikit-learn comparison of linear, polynomial, ridge, random forest and SVR across overfitting, multicollinearity, feature selection, PCA and time series forecasting.
+  site-url: "https://o-2wice.github.io/regression-benchmark-and-forecasting/"
+  repo-url: "https://github.com/O-2wice/regression-benchmark-and-forecasting"
+  favicon: assets/favicon.png
+  image: assets/social-card.png
+  open-graph:
+    image-width: 1200
+    image-height: 630
+    locale: en_GB
+  twitter-card:
+    card-style: summary_large_image
+
+  page-footer:
+    border: true
+    left: "Code and the executed notebook: [github.com/O-2wice/regression-benchmark-and-forecasting](https://github.com/O-2wice/regression-benchmark-and-forecasting)"
+    right: "[Report an issue](https://github.com/O-2wice/regression-benchmark-and-forecasting/issues)"
+
+format:
+  html:
+    lang: en
+    theme:
+      light: [cosmo, assets/theme-light.scss]
+      dark: [darkly, assets/theme-dark.scss]
+    toc: false
+    smooth-scroll: true
+    fig-cap-location: bottom
+    include-in-header:
+      text: |
+        <meta name="google-site-verification" content="jrY_3kfE94UgAOUETVccWoXGGhYpIR16svPJzQmwXFI" />
+        <link rel="canonical" href="https://o-2wice.github.io/regression-benchmark-and-forecasting/" />
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content="https://o-2wice.github.io/regression-benchmark-and-forecasting/" />
+        <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+        <meta name="keywords" content="regression, scikit-learn, overfitting, negative R2, R squared, ridge regression, polynomial regression, random forest regressor, SVR, multicollinearity, PCA, SelectKBest, time series forecasting, rolling window, machine learning tutorial" />
+        <script type="application/ld+json">
+        {
+          "@context": "https://schema.org",
+          "@type": "TechArticle",
+          "headline": "Overfitting and negative R2: a regression benchmark in scikit-learn",
+          "name": "A perfect score is a warning",
+          "description": "Polynomial regression scores a perfect R2 of 1.000 on a clean curve and minus 24 once noise is added. A scikit-learn comparison of linear, polynomial, ridge, random forest and SVR across overfitting, multicollinearity, feature selection, PCA and time series forecasting.",
+          "image": "https://o-2wice.github.io/regression-benchmark-and-forecasting/assets/social-card.png",
+          "url": "https://o-2wice.github.io/regression-benchmark-and-forecasting/",
+          "mainEntityOfPage": "https://o-2wice.github.io/regression-benchmark-and-forecasting/",
+          "inLanguage": "en-GB",
+          "datePublished": "2026-09-29",
+          "dateModified": "2026-09-29",
+          "isAccessibleForFree": true,
+          "license": "https://opensource.org/licenses/MIT",
+          "keywords": "regression, scikit-learn, overfitting, negative R squared, ridge regression, multicollinearity, PCA, time series forecasting",
+          "about": [
+            {"@type": "Thing", "name": "Regression analysis"},
+            {"@type": "Thing", "name": "Overfitting"},
+            {"@type": "Thing", "name": "Coefficient of determination"},
+            {"@type": "Thing", "name": "Multicollinearity"},
+            {"@type": "Thing", "name": "Time series forecasting"}
+          ],
+          "proficiencyLevel": "Beginner",
+          "codeRepository": "https://github.com/O-2wice/regression-benchmark-and-forecasting"
+        }
+        </script>
+
+execute:
+  enabled: false
+  freeze: auto
+  cache: false
+  warning: false
+  message: false
