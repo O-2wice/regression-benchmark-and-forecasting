@@ -1,0 +1,20 @@
+# Local environments
+.venv/
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+# Data: the notebook downloads and extracts this itself
+notebooks/weatherww2/
+notebooks/weatherww2.zip
+notebooks/__MACOSX/
+*.zip
+
+# Scratch
+.pre-run-backup.ipynb
+*.bak
+
+# Quarto build scratch outside the rendered site
+/.quarto/
+**/*.quarto_ipynb
+/site_libs/
